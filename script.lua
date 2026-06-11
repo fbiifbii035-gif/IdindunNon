@@ -1,41 +1,38 @@
--- SLEEPYHUB.EZ ALL-IN-ONE (PERFECT INFINITE STAMINA 100% FIX)
+-- SLEEPYHUB.EZ ALL-IN-ONE (WALKSPEED & MOTION FIX)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 local Config = {
     InfiniteStamina = false, AntiRagdoll = false, NoSlowdown = false, FlyJump = false,
-    SpeedBoost = false, SpeedValue = 22, GodmodeInvisible = false, ClaimQuests = false,
+    SpeedBoost = false, SpeedValue = 28, GodmodeInvisible = false, ClaimQuests = false,
     AntiStomp = false, AntiAim = false, ItemAura = false, SkipSpin = false, Aimbot = false, ESP = false,
     FOVSize = 100
 }
 
--- [GUI Setup - SleepyHub Style]
+-- [GUI Setup]
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-ScreenGui.Name = "SleepyHub_Perfect_Stamina"
+ScreenGui.Name = "SleepyHub_SpeedFix_v6"
 ScreenGui.ResetOnSpawn = false
 
--- ระบบวงกลม FOV สีแดงแท้ (Perfect Circle) ของ Aimbot
+-- วงกลม FOV สีแดงแท้ของ Aimbot
 local FOVCircle = Instance.new("Frame", ScreenGui)
 FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOVCircle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 FOVCircle.BackgroundTransparency = 0.92
 FOVCircle.Visible = false
-
 local UICorner = Instance.new("UICorner", FOVCircle)
 UICorner.CornerRadius = UDim.new(1, 0)
-
 local UIStroke = Instance.new("UIStroke", FOVCircle)
 UIStroke.Color = Color3.fromRGB(255, 0, 0)
 UIStroke.Thickness = 1.5
 
--- หน้าต่างเมนูหลัก (SleepyHub)
+-- หน้าต่างเมนูหลัก
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 550, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -160)
@@ -124,7 +121,7 @@ local function CreateSlider(parent, text, min, max, default, configKey)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
 end
 
--- สร้างเมนูกลับมาครบทั้งหมด
+-- สร้างปุ่มเมนู
 CreateToggle(LeftColumn, "Infinite Stamina", "InfiniteStamina")
 CreateToggle(LeftColumn, "Anti Ragdoll", "AntiRagdoll")
 CreateToggle(LeftColumn, "No Slowdown", "NoSlowdown")
@@ -137,7 +134,7 @@ CreateToggle(RightColumn, "Aimbot", "Aimbot")
 CreateToggle(RightColumn, "Players ESP", "ESP")
 CreateSlider(RightColumn, "Aimbot FOV Radius", 30, 250, Config.FOVSize, "FOVSize")
 
--- **ปุ่มไอคอนย่อหน้าจอรูปตัว M ดาร์กโหมด (ลากย้ายตำแหน่งได้ ไม่บังปุ่มกดสปิน)**
+-- ปุ่มไอคอนย่อหน้าจอรูปตัว M ดาร์กโหมด
 local IconButton = Instance.new("TextButton", ScreenGui)
 IconButton.Size = UDim2.new(0, 42, 0, 42)
 IconButton.Position = UDim2.new(0.1, 0, 0.05, 0)
@@ -168,12 +165,10 @@ local DiamondStroke = Instance.new("UIStroke", DiamondGlow)
 DiamondStroke.Color = Color3.fromRGB(150, 150, 150)
 DiamondStroke.Thickness = 0.8
 
-IconButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+IconButton.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
 -- ==========================================================
---  ระบบดักจับค่าพลังงานขั้นสูง (ADVANCED METATABLE HOOK FOR STAMINA)
+--        ระบบ Bypass และควบคุมค่าสถานะ (METATABLE & ENVIRONMENT)
 -- ==========================================================
 local RawMetatable = getrawmetatable(game)
 local OldIndex = RawMetatable.__index
@@ -181,52 +176,75 @@ local OldNewIndex = RawMetatable.__newindex
 setreadonly(RawMetatable, false)
 
 RawMetatable.__index = newcclosure(function(self, key)
-    -- ดักจับว่าเกมกำลังพยายามอ่านค่า Stamina ของผู้เล่นหรือไม่
-    if Config.InfiniteStamina and not checkcaller() and (key == "Stamina" or key == "Energy" or key == "stamina") then
-        return 100 -- ส่งค่ากลับไปหาเกมว่าพลังงานเต็ม 100 เสมอ ห้ามลดเด็ดขาด
+    if not checkcaller() then
+        -- ล็อกค่าสตามิน่าในหน่วยความจำ
+        if Config.InfiniteStamina and (key == "Stamina" or key == "Energy" or key == "stamina" or (key == "Value" and (self.Name == "Stamina" or self.Name == "Energy"))) then 
+            return 100 
+        end
+        -- ดักจับสคริปต์เกมที่พยายามอ่านค่า WalkSpeed จริงเพื่อเตะผู้เล่น ให้มันเห็นเป็น 16 ตลอดเวลา
+        if Config.SpeedBoost and self:IsA("Humanoid") and key == "WalkSpeed" then
+            return 16
+        end
     end
     return OldIndex(self, key)
 end)
 
 RawMetatable.__newindex = newcclosure(function(self, key, value)
-    -- ดักจับว่าเกมกำลังพยายามเขียนค่า/หักค่า Stamina ลงหรือไม่ ถ้าใช่ บล็อกทิ้งทันที
-    if Config.InfiniteStamina and not checkcaller() and (key == "Stamina" or key == "Energy" or key == "stamina") then
-        return OldNewIndex(self, key, 100)
+    if not checkcaller() then
+        if Config.InfiniteStamina and (key == "Stamina" or key == "Energy" or key == "stamina" or (key == "Value" and (self.Name == "Stamina" or self.Name == "Energy"))) then 
+            return OldNewIndex(self, key, 100) 
+        end
+        -- บล็อกคำสั่งของสคริปต์เกมหลักที่พยายามลด WalkSpeed ของเราลงขณะเดิน
+        if Config.SpeedBoost and self:IsA("Humanoid") and key == "WalkSpeed" then
+            return OldNewIndex(self, key, Config.SpeedValue)
+        end
     end
     return OldNewIndex(self, key, value)
 end)
 setreadonly(RawMetatable, true)
 
+-- ลูปความเร็วสูงพิเศษระดับเสี้ยววินาทีเพื่อล็อกค่า Object ทั้งหมด
+task.spawn(function()
+    while task.wait() do
+        pcall(function()
+            if Config.InfiniteStamina then
+                local targetObjects = {char = LocalPlayer.Character, player = LocalPlayer}
+                for _, obj in pairs(targetObjects) do
+                    if obj then
+                        for _, v in pairs(obj:GetDescendants()) do
+                            if v:IsA("NumberValue") or v:IsA("IntValue") then
+                                if v.Name:lower() == "stamina" or v.Name:lower() == "energy" then v.Value = 100 end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
 -- ==========================================
---          ระบบการทำงานเสริมอื่นๆ (CORE LOGIC)
+--          ระบบการทำงานหลัก (CORE LOGIC)
 -- ==========================================
 local FakeBody = nil
 local OriginalCFrame = nil
 
-RunService.RenderStepped:Connect(function()
+RunService.Heartbeat:Connect(function()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then return end
     local hum = char.Humanoid
     local root = char.HumanoidRootPart
 
-    -- ตัวช่วยซัพพอร์ตระบบล็อกเกจพลังงาน (Force Stamina เติมเต็ม 100 ทุกเฟรม)
-    if Config.InfiniteStamina then
-        hum.JumpHeight = 7.2
-        -- ค้นหาและล็อกตัวแปรเกจพลังงานในโมเดลตัวละคร (ถ้ามี)
-        local StaminaVal = char:FindFirstChild("Stamina") or char:FindFirstChild("Energy") or LocalPlayer:FindFirstChild("Stamina")
-        if StaminaVal and StaminaVal:IsA("NumberValue") or StaminaVal:IsA("IntValue") then
-            StaminaVal.Value = 100
+    -- **แก้ไขบัค WalkSpeed: บังคับเขียนทับค่าความเร็วในระบบฟิสิกส์ทุกเฟรม ไม่ว่าจะกดเดินหรือวิ่ง**
+    if Config.SpeedBoost then
+        hum.WalkSpeed = Config.SpeedValue
+        -- เสริมแรงส่งทิศทางสำหรับระบบที่ถูกจำกัดค่า WalkSpeed อัตโนมัติจากฝั่งเซิร์ฟเวอร์
+        if hum.MoveDirection.Magnitude > 0 then
+            root.Velocity = Vector3.new(hum.MoveDirection.X * Config.SpeedValue, root.Velocity.Y, hum.MoveDirection.Z * Config.SpeedValue)
         end
     end
 
-    -- Speed Boost
-    if Config.SpeedBoost then
-        hum.WalkSpeed = Config.SpeedValue
-    else
-        hum.WalkSpeed = 16
-    end
-
-    -- Ghost Godmode (ร่างแยก)
+    -- Ghost Mode ร่างทิพย์เห็นตัวเองปกติ
     if Config.GodmodeInvisible then
         if not FakeBody then
             OriginalCFrame = root.CFrame
@@ -234,23 +252,26 @@ RunService.RenderStepped:Connect(function()
             FakeBody.Size = Vector3.new(2, 5, 2)
             FakeBody.CFrame = OriginalCFrame
             FakeBody.Anchored = true
-            FakeBody.Transparency = 0.6
+            FakeBody.Transparency = 0.7 
             FakeBody.Color = Color3.fromRGB(0, 162, 255)
             FakeBody.CanCollide = false
+            
             for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("Decal") then v.Transparency = 1 end
+                if v:IsA("BasePart") or v:IsA("Decal") then
+                    if v.Name ~= "HumanoidRootPart" then v.Transparency = 0 end 
+                end
+            end
+        end
+        for _, part in pairs(char:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Velocity = Vector3.new(0, 0, 0)
             end
         end
     else
         if FakeBody then
             FakeBody:Destroy()
             FakeBody = nil
-            root.CFrame = OriginalCFrame
-            for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("Decal") then
-                    if v.Name ~= "HumanoidRootPart" then v.Transparency = 0 end
-                end
-            end
+            root.CFrame = OriginalCFrame 
         end
     end
 
@@ -258,18 +279,15 @@ RunService.RenderStepped:Connect(function()
     if Config.ItemAura then
         for _, item in pairs(Workspace:GetChildren()) do
             if item:IsA("BasePart") and (item.Name:lower():find("fruit") or item.Name:lower():find("drop") or item.Name:lower():find("item")) then
-                if (item.Position - root.Position).Magnitude <= 50 then
-                    item.CFrame = root.CFrame + Vector3.new(0, 2, 0)
-                end
+                if (item.Position - root.Position).Magnitude <= 50 then item.CFrame = root.CFrame + Vector3.new(0, 2, 0) end
             end
         end
     end
 
-    -- Aimbot
+    -- Aimbot + วงกลม FOV
     if Config.Aimbot then
         FOVCircle.Size = UDim2.new(0, Config.FOVSize * 2, 0, Config.FOVSize * 2)
         FOVCircle.Visible = true
-
         local target = nil
         local shortest = Config.FOVSize
         for _, p in pairs(Players:GetPlayers()) do
@@ -289,7 +307,7 @@ RunService.RenderStepped:Connect(function()
         FOVCircle.Visible = false
     end
 
-    -- ESP
+    -- Players ESP
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
             local hi = p.Character:FindFirstChild("SleepyESP_Final")

@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- Global Settings (แก้ไขความเร็วสูงสุดให้ตั้งแต่เริ่มต้น)
+-- Global Settings
 local Settings = {
     AimbotEnabled = false,
     ESPEnabled = false,
@@ -21,7 +21,7 @@ local Settings = {
 
 -- Create ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KHAN_GUI_FULL_VERSION"
+ScreenGui.Name = "KHAN_GUI_BLOXSPIN_FIX"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -48,7 +48,7 @@ FOVStroke.Parent = FOVOuter
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 250, 0, 430)
 MainFrame.Position = UDim2.new(0.65, 0, 0.2, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
@@ -106,6 +106,235 @@ local function CreateButton(text, order, callback)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 12
+    btn.LayoutOrder = order
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.Activated:Connect(function()
+        callback(btn)
+    end)
+    return btn
+end
+
+local function CreateSlider(text, min, max, default, order, callback)
+    local Frame = Instance.new("Frame", Container)
+    Frame.Size = UDim2.new(0, 220, 0, 42)
+    Frame.BackgroundTransparency = 1
+    Frame.LayoutOrder = order
+
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size = UDim2.new(1, 0, 0, 16)
+    Label.BackgroundTransparency = 1
+    Label.Text = text .. ": " .. default
+    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 11
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Track = Instance.new("Frame", Frame)
+    Track.Size = UDim2.new(1, 0, 0, 6)
+    Track.Position = UDim2.new(0, 0, 0, 22)
+    Track.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    Track.BorderSizePixel = 0
+    Instance.new("UICorner", Track).CornerRadius = UDim.new(1, 0)
+    
+    local Fill = Instance.new("Frame", Track)
+    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    Fill.BorderSizePixel = 0
+    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+
+    local Trigger = Instance.new("TextButton", Track)
+    Trigger.Size = UDim2.new(1, 0, 1, 0)
+    Trigger.BackgroundTransparency = 1
+    Trigger.Text = ""
+
+    local isDragging = false
+
+    local function updateSliderPosition(inputPosition)
+        local trackPosition = Track.AbsolutePosition.X
+        local trackSize = Track.AbsoluteSize.X
+        local percentage = math.clamp((inputPosition.X - trackPosition) / trackSize, 0, 1)
+        
+        Fill.Size = UDim2.new(percentage, 0, 1, 0)
+        local val = math.round(min + (percentage * (max - min)))
+        Label.Text = text .. ": " .. val
+        callback(val)
+    end
+
+    Trigger.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = true
+            updateSliderPosition(input.Position)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSliderPosition(input.Position)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+        end
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- GENERATE CONTROLS
+-------------------------------------------------------------------------------
+local AimBtn = CreateButton("Aimbot: OFF", 1, function(btn)
+    Settings.AimbotEnabled = not Settings.AimbotEnabled
+    btn.Text = Settings.AimbotEnabled and "Aimbot: ON" or "Aimbot: OFF"
+    btn.BackgroundColor3 = Settings.AimbotEnabled and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(45, 45, 45)
+end)
+
+local EspBtn = CreateButton("3D Player ESP: OFF", 2, function(btn)
+    Settings.ESPEnabled = not Settings.ESPEnabled
+    btn.Text = Settings.ESPEnabled and "3D Player ESP: ON" or "3D Player ESP: OFF"
+    btn.BackgroundColor3 = Settings.ESPEnabled and Color3.fromRGB(50, 50, 180) or Color3.fromRGB(45, 45, 45)
+end)
+
+local StaminaBtn = CreateButton("Infinite Stamina: OFF", 3, function(btn)
+    Settings.InfiniteStamina = not Settings.InfiniteStamina
+    btn.Text = Settings.InfiniteStamina and "Infinite Stamina: ON" or "Infinite Stamina: OFF"
+    btn.BackgroundColor3 = Settings.InfiniteStamina and Color3.fromRGB(180, 50, 50) or Color3.fromRGB(45, 45, 45)
+end)
+
+local IYBtn = CreateButton("⚡ Open Infinite Yield", 4, function(btn)
+    btn.Text = "Loading IY..."
+    btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    task.spawn(function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source', true))()
+        end)
+        if success then
+            btn.Text = "⚡ Infinite Yield: Loaded"
+            btn.BackgroundColor3 = Color3.fromRGB(230, 150, 0)
+        else
+            btn.Text = "❌ Load Failed (Retry)"
+            btn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+        end
+    end)
+end)
+
+CreateSlider("FOV Radius", 10, 300, Settings.FOV, 5, function(v) Settings.FOV = v end)
+CreateSlider("Lock Speed (1=Fast)", 1, 10, Settings.Smoothness, 6, function(v) Settings.Smoothness = v end)
+CreateSlider("WalkSpeed", 20, 24, Settings.WalkSpeed, 7, function(v) Settings.WalkSpeed = v end)
+
+-------------------------------------------------------------------------------
+-- ADVANCED STAMINA BYPASS LOGIC (FOR BLOX SPIN)
+-------------------------------------------------------------------------------
+local function BypassStamina(character)
+    if not character then return end
+    
+    -- ค้นหาโฟลเดอร์หรือค่าทั้งหมดที่อาจจะเป็น Stamina ในตัวละคร
+    task.spawn(function()
+        while task.wait(0.1) do
+            if not Settings.InfiniteStamina then return end
+            
+            -- วิธีที่ 1: ค้นหาตามชื่อในตัวละครและโฟลเดอร์สถิติต่างๆ
+            for _, obj in pairs(character:GetDescendants()) do
+                if obj:IsA("ValueBase") and (obj.Name:lower():match("stamina") or obj.Name:lower():match("energy") or obj.Name:lower():match("dash")) then
+                    obj.Value = 100
+                end
+            end
+            
+            -- วิธีที่ 2: บล็อกค่าความเหนื่อยล้าผ่านทางโฟลเดอร์ข้อมูลผู้เล่น (Back-up)
+            local stats = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Data")
+            if stats then
+                local stam = stats:FindFirstChild("Stamina") or stats:FindFirstChild("Energy")
+                if stam and stam:IsA("ValueBase") then
+                    stam.Value = 100
+                end
+            end
+        end
+    end)
+end
+
+-- ตรวจจับเวลาตัวละครตายแล้วเกิดใหม่ให้สคริปต์ยังผูกค่าไว้ต่อเนื่อง
+LocalPlayer.CharacterAdded:Connect(BypassStamina)
+if LocalPlayer.Character then BypassStamina(LocalPlayer.Character) end
+
+-------------------------------------------------------------------------------
+-- CORE LOGIC
+-------------------------------------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    if char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = Settings.WalkSpeed
+    end
+
+    -- 3D Player ESP
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local targetChar = p.Character
+            local highlight = targetChar:FindFirstChild("ESPHighlight")
+            if Settings.ESPEnabled then
+                local hum = targetChar:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    if not highlight then
+                        highlight = Instance.new("Highlight")
+                        highlight.Name = "ESPHighlight"
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                        highlight.FillTransparency = 0.6
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.Adornee = targetChar
+                        highlight.Parent = targetChar
+                    end
+                else
+                    if highlight then highlight:Destroy() end
+                end
+            else
+                if highlight then highlight:Destroy() end
+            end
+        end
+    end
+
+    -- Aimbot (Fixed Look Camera Only)
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    if Settings.AimbotEnabled then
+        FOVOuter.Size = UDim2.new(0, Settings.FOV * 2, 0, Settings.FOV * 2)
+        FOVOuter.Visible = true
+
+        local closest = nil
+        local shortestDist = Settings.FOV
+        
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                    if vis then
+                        local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                        if dist < shortestDist then
+                            shortestDist = dist
+                            closest = p
+                        end
+                    end
+                end
+            end
+        end
+        
+        if closest and closest.Character and closest.Character:FindFirstChild("Head") then
+            local targetPosition = closest.Character.Head.Position
+            local cameraPosition = Camera.CFrame.Position
+            local lookAtCFrame = CFrame.new(cameraPosition, targetPosition)
+            
+            if Settings.Smoothness <= 1 then
+                Camera.CFrame = lookAtCFrame
+            else
+                local lockAmount = 1 / Settings.Smoothness
+                Camera.CFrame = Camera.CFrame:Lerp(lookAtCFrame, lockAmount)
+            end
+        end
+    else
+        FOVOuter.Visible = false
+    end
+end)
     btn.LayoutOrder = order
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     

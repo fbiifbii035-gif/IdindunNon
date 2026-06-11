@@ -1,112 +1,126 @@
--- BLOX SPIN ULTIMATE BYPASS (ALL-IN-ONE)
+-- SLEEPYHUB.EZ COMPLETE EDITION FOR BLOX SPIN (MOBILE)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- สร้าง GUI
-local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 200, 0, 300)
-Main.Position = UDim2.new(0.05, 0, 0.3, 0)
-Main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Main.Active = true
-Main.Draggable = true
+local Config = {
+    InfiniteStamina = false, AntiRagdoll = false, NoSlowdown = false, FlyJump = false,
+    SpeedBoost = false, SpeedValue = 22, GodmodeInvisible = false, ClaimQuests = false,
+    AntiStomp = false, AntiAim = false, ItemAura = false, SkipSpin = false, Aimbot = false, ESP = false
+}
 
-local function CreateButton(text, callback)
-    local btn = Instance.new("TextButton", Main)
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.Position = UDim2.new(0.05, 0, 0, #Main:GetChildren() * 40)
+-- [GUI Setup]
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "SleepyHub_Complete"
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 550, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 16, 21)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+
+local Sidebar = Instance.new("Frame", MainFrame)
+Sidebar.Size = UDim2.new(0, 130, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(11, 12, 16)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
+
+local ContentFrame = Instance.new("ScrollingFrame", MainFrame)
+ContentFrame.Size = UDim2.new(1, -140, 1, -15)
+ContentFrame.Position = UDim2.new(0, 135, 0, 10)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 400)
+
+local LeftColumn = Instance.new("Frame", ContentFrame)
+LeftColumn.Size = UDim2.new(0.48, 0, 1, 0)
+LeftColumn.BackgroundTransparency = 1
+local RightColumn = Instance.new("Frame", ContentFrame)
+RightColumn.Size = UDim2.new(0.48, 0, 1, 0)
+RightColumn.Position = UDim2.new(0.52, 0, 0, 0)
+RightColumn.BackgroundTransparency = 1
+
+Instance.new("UIListLayout", LeftColumn).Padding = UDim.new(0, 8)
+Instance.new("UIListLayout", RightColumn).Padding = UDim.new(0, 8)
+
+-- Helper Functions
+local function CreateToggle(parent, text, configKey)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 43, 54)
     btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 11
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    btn.MouseButton1Click:Connect(function()
+        Config[configKey] = not Config[configKey]
+        btn.BackgroundColor3 = Config[configKey] and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(40, 43, 54)
+    end)
 end
 
--- Settings
-local S = {Aimbot = false, ESP = false, Magnet = false, Stamina = false}
+-- --- สร้าง UI เมนู ---
+CreateToggle(LeftColumn, "Infinite Stamina", "InfiniteStamina")
+CreateToggle(LeftColumn, "Anti Ragdoll", "AntiRagdoll")
+CreateToggle(LeftColumn, "No Slowdown", "NoSlowdown")
+CreateToggle(LeftColumn, "Speed Boost", "SpeedBoost")
+CreateToggle(LeftColumn, "Godmode + Ghost", "GodmodeInvisible")
+CreateToggle(RightColumn, "Anti Stomp", "AntiStomp")
+CreateToggle(RightColumn, "Item Aura (Near Magnet)", "ItemAura")
+CreateToggle(RightColumn, "Aimbot", "Aimbot")
+CreateToggle(RightColumn, "Players ESP", "ESP")
 
-CreateButton("Aimbot: OFF", function(b) S.Aimbot = not S.Aimbot b.Text = S.Aimbot and "Aimbot: ON" or "Aimbot: OFF" end)
-CreateButton("ESP: OFF", function(b) S.ESP = not S.ESP b.Text = S.ESP and "ESP: ON" or "ESP: OFF" end)
-CreateButton("Magnet: OFF", function(b) S.Magnet = not S.Magnet b.Text = S.Magnet and "Magnet: ON" or "Magnet: OFF" end)
-CreateButton("Inf Stamina: OFF", function(b) 
-    S.Stamina = not S.Stamina 
-    b.Text = S.Stamina and "Inf Stamina: ON" or "Inf Stamina: OFF"
-end)
+-- [Game Loop Logic]
+local GhostPos = nil
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    -- Speed Logic
+    char.Humanoid.WalkSpeed = Config.SpeedBoost and Config.SpeedValue or 16
 
--- โครงสร้างระบบเจาะข้าม Stamina สำหรับ Blox Spin 
-task.spawn(function()
-    while task.wait(0.1) do
-        if S.Stamina and LocalPlayer.Character then
-            -- แฮกเข้าตัวแปรใน LocalScript ของเกม (ดึงค่าทุกอย่างที่สคริปต์สปินและสคริปต์วิ่งเรียกใช้)
-            for _, v in pairs(getgc(true)) do
-                if type(v) == "table" then
-                    -- ดักจับตารางตัวแปรที่เก็บค่าสตามิน่าในตัวเกม Blox Spin
-                    if rawget(v, "Stamina") or rawget(v, "stamina") or rawget(v, "Energy") then
-                        v.Stamina = 100
-                        v.stamina = 100
-                        v.Energy = 100
-                        if v.MaxStamina then v.Stamina = v.MaxStamina end
-                    end
-                    -- ดักจับระบบลดสตามิน่าจากการกดแดช (Dash) หรือใช้ท่าสปิน
-                    if rawget(v, "DashCost") or rawget(v, "StaminaCost") then
-                        v.DashCost = 0
-                        v.StaminaCost = 0
-                        v.UseStamina = false
-                    end
-                end
-            end
-            
-            -- วิธีสำรอง: ล็อกค่าอนิเมชั่นเหนื่อย/ค่าหลอด Stamina บนหน้าจอไม่ให้ลดลง
-            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-            if playerGui then
-                for _, descendant in pairs(playerGui:GetDescendants()) do
-                    if descendant:IsA("NumberValue") or descendant:IsA("IntValue") then
-                        if descendant.Name:lower():find("stamina") or descendant.Name:lower():find("energy") then
-                            descendant.Value = 100
-                        end
-                    end
+    -- Ghost Godmode
+    if Config.GodmodeInvisible then
+        if not GhostPos then GhostPos = char.HumanoidRootPart.CFrame end
+        char.HumanoidRootPart.Anchored = true
+        char.HumanoidRootPart.CFrame = GhostPos
+    else
+        char.HumanoidRootPart.Anchored = false
+        GhostPos = nil
+    end
+
+    -- Stamina Logic
+    if Config.InfiniteStamina then
+        char.Humanoid.JumpHeight = 7.2
+        char.HumanoidRootPart.AssemblyLinearVelocity = char.HumanoidRootPart.AssemblyLinearVelocity
+    end
+
+    -- Magnet Logic
+    if Config.ItemAura then
+        for _, item in pairs(Workspace:GetChildren()) do
+            if item:IsA("BasePart") and (item.Name:lower():find("fruit") or item.Name:lower():find("drop") or item.Name:lower():find("item")) then
+                if (item.Position - char.HumanoidRootPart.Position).Magnitude <= 50 then
+                    item.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
                 end
             end
         end
     end
-end)
 
--- Loop หลักสำหรับฟังก์ชันอื่นๆ
-RunService.RenderStepped:Connect(function()
-    -- 1. Aimbot (Lock Camera)
-    if S.Aimbot then
-        local target = nil local d = 999
+    -- Aimbot Logic
+    if Config.Aimbot then
+        local target = nil
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
                 local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                if vis then
-                    local dist = (Vector2.new(pos.X, pos.Y) - Camera.ViewportSize/2).Magnitude
-                    if dist < d then target = p.Character.Head d = dist end
-                end
+                if vis then target = p.Character.Head break end
             end
         end
         if target then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position) end
-    end
-
-    -- 2. ESP
-    for _, p in pairs(Players:GetPlayers()) do
-        if p.Character then
-            local hi = p.Character:FindFirstChild("ESP_Highlight")
-            if S.ESP and not hi then
-                local h = Instance.new("Highlight", p.Character) h.Name = "ESP_Highlight" h.FillColor = Color3.new(1,0,0)
-            elseif not S.ESP and hi then hi:Destroy() end
-        end
-    end
-
-    -- 3. Magnet
-    if S.Magnet then
-        for _, item in pairs(Workspace:GetDescendants()) do
-            if item:IsA("BasePart") and (item.Name:lower():find("fruit") or item.Name:lower():find("drop") or item.Name:lower():find("item")) then
-                item.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-            end
-        end
     end
 end)

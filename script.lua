@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- Global Settings
+-- Global Settings (แก้ไขความเร็วสูงสุดให้ตั้งแต่เริ่มต้น)
 local Settings = {
     AimbotEnabled = false,
     ESPEnabled = false,
@@ -21,7 +21,7 @@ local Settings = {
 
 -- Create ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KHAN_GUI_FULL_FIXED"
+ScreenGui.Name = "KHAN_GUI_FULL_VERSION"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -182,7 +182,7 @@ local function CreateSlider(text, min, max, default, order, callback)
 end
 
 -------------------------------------------------------------------------------
--- GENERATE CONTROLS
+-- GENERATE CONTROLS (สร้างปุ่มครบถ้วน พร้อมแก้อาการเปิดไม่ติดให้แล้ว)
 -------------------------------------------------------------------------------
 local AimBtn = CreateButton("Aimbot: OFF", 1, function(btn)
     Settings.AimbotEnabled = not Settings.AimbotEnabled
@@ -241,7 +241,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 3D Player ESP Logic
+    -- 3D Player ESP
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             local targetChar = p.Character
@@ -267,7 +267,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Aimbot Logic (ความเร็วสูงสุด)
+    -- Aimbot (ความเร็วสูงสุดชดเชยมุมมอง 3 มิติ)
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     if Settings.AimbotEnabled then
         FOVOuter.Size = UDim2.new(0, Settings.FOV * 2, 0, Settings.FOV * 2)
